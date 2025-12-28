@@ -1,43 +1,105 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart'; // Import ini penting untuk kIsWeb
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../config/app_config.dart';
+import '../utils/app_logger.dart';
 
+/// HTTP Client singleton dengan Dio
+/// 
+/// Penggunaan:
+/// ```dart
+/// final client = ApiClient();
+/// final response = await client.dio.get('/endpoint');
+/// ```
 class ApiClient {
-  // BASE URL BARU SESUAI PERMINTAAN
-  // Karena ini URL publik, tidak perlu membedakan emulator/web.
-  static const String baseUrl =
-      'http://tanamcare.myproject.diskon.com/public/index.php/api';
+  // Singleton instance
+  static ApiClient? _instance;
+  static Dio? _dio;
+  static const _storage = FlutterSecureStorage();
 
-  late final Dio _dio;
-  final _storage = const FlutterSecureStorage();
+  /// Factory constructor untuk singleton
+  factory ApiClient() {
+    _instance ??= ApiClient._internal();
+    return _instance!;
+  }
 
-  ApiClient() {
+  ApiClient._internal() {
     _dio = Dio(BaseOptions(
-      baseUrl: baseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
+      baseUrl: AppConfig.apiBaseUrl,
+      connectTimeout: Duration(seconds: AppConfig.connectTimeout),
+      receiveTimeout: Duration(seconds: AppConfig.receiveTimeout),
       headers: {
-        'Accept': 'application/json', // Wajib sertakan ini
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
       },
     ));
 
-    // Interceptor untuk Token
-    _dio.interceptors.add(InterceptorsWrapper(
+    // Interceptor untuk Token & Logging
+    _dio!.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        // Ambil token dari storage
+        // Log request
+        AppLogger.apiRequest(
+          options.method,
+          '${options.baseUrl}${options.path}',
+          options.data,
+        );
+        
+        // Tambah token ke header
         final token = await _storage.read(key: 'access_token');
         if (token != null) {
-          // Format Authorization: Bearer <token>
           options.headers['Authorization'] = 'Bearer $token';
         }
         return handler.next(options);
       },
+      onResponse: (response, handler) {
+        // Log response
+        AppLogger.apiResponse(
+          response.requestOptions.path,
+          response.statusCode,
+        );
+        return handler.next(response);
+      },
       onError: (DioException e, handler) {
-        // Handle error seperti 401 Unauthorized disini
+        // Log error dengan detail lebih lengkap
+        String errorDetail;
+        if (e.response != null) {
+          errorDetail = 'Status: ${e.response?.statusCode}, Data: ${e.response?.data}';
+        } else {
+          // Tidak ada response - kemungkinan network error atau CORS
+          errorDetail = 'Type: ${e.type.name}, Message: ${e.message}';
+          if (e.type == DioExceptionType.connectionError) {
+            AppLogger.warning('Connection Error - Periksa koneksi internet atau server tidak dapat dijangkau');
+          } else if (e.type == DioExceptionType.unknown) {
+            AppLogger.warning('Unknown Error - Kemungkinan CORS issue (jika di Web) atau server tidak merespons');
+          }
+        }
+        AppLogger.error('API Error: ${e.requestOptions.path}', errorDetail);
+        
+        // Handle 401 Unauthorized - bisa tambah auto logout di sini
+        if (e.response?.statusCode == 401) {
+          AppLogger.warning('Token expired or invalid');
+          // TODO: Implement auto logout atau refresh token
+        }
+        
         return handler.next(e);
       },
     ));
   }
 
-  Dio get dio => _dio;
+  Dio get dio => _dio!;
+
+  /// Reset singleton (untuk testing atau logout)
+  static void reset() {
+    _dio = null;
+    _instance = null;
+  }
+
+  /// Get current token
+  static Future<String?> getToken() async {
+    return await _storage.read(key: 'access_token');
+  }
+
+  /// Clear token (untuk logout)
+  static Future<void> clearToken() async {
+    await _storage.delete(key: 'access_token');
+  }
 }

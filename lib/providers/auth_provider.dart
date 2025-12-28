@@ -14,7 +14,14 @@ class AuthProvider extends ChangeNotifier {
   UserModel? _user;
   UserModel? get user => _user;
 
+<<<<<<< Updated upstream
   void loadUser() {
+=======
+  // --- REGISTER (DIPERBAIKI) ---
+  Future<bool> register(String name, String email, String password) async {
+    _isLoading = true;  // Fixed: was false
+    _errorMessage = null; // Reset error lama
+>>>>>>> Stashed changes
     notifyListeners();
   }
 

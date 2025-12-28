@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dashboard/home_screen.dart';
+<<<<<<< Updated upstream
+=======
+import 'scan/scan_screen.dart';
+>>>>>>> Stashed changes
 import 'history/history_screen.dart';
 import 'profile/profile_screen.dart';
 
@@ -13,6 +17,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
+<<<<<<< Updated upstream
   late final List<Widget> _pages;
 
   @override
@@ -25,6 +30,15 @@ class _MainScreenState extends State<MainScreen> {
       ProfileScreen(),
     ];
   }
+=======
+  // Daftar halaman untuk setiap tab
+  final List<Widget> _pages = [
+    const HomeScreen(),
+    const ScanScreen(),
+    const HistoryScreen(),
+    const ProfileScreen(),
+  ];
+>>>>>>> Stashed changes
 
   @override
   Widget build(BuildContext context) {

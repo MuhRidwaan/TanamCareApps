@@ -43,6 +43,12 @@ dependencies:
   intl: ^0.19.0 # Format tanggal & mata uang
   form_validator: ^2.1.1 # Validasi input form mudah
 
+<<<<<<< Updated upstream
+=======
+  # Image Picker
+  image_picker: ^1.0.7 # Pick images from gallery/camera
+
+>>>>>>> Stashed changes
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.6
@@ -69,9 +75,14 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
+<<<<<<< Updated upstream
   # assets:
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
+=======
+  assets:
+    - assets/models/TanamCareModelAI.tflite
+>>>>>>> Stashed changes
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware
