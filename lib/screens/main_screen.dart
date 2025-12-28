@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dashboard/home_screen.dart'; // Kita akan buat ini setelah ini
-// import 'scan/scan_screen.dart'; // Placeholder
+import 'scan/scan_screen.dart'; 
 // import 'history/history_screen.dart'; // Placeholder
 import 'profile/profile_screen.dart';
 
@@ -17,7 +17,7 @@ class _MainScreenState extends State<MainScreen> {
   // Daftar halaman untuk setiap tab
   final List<Widget> _pages = [
     const HomeScreen(),
-    const Center(child: Text("Halaman Scan AI")), // Placeholder
+     const ScanScreen(),
     const Center(child: Text("Halaman History")), // Placeholder
     const ProfileScreen(),
   ];
