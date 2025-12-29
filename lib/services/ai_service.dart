@@ -4,7 +4,7 @@ import 'package:image/image.dart' as img;
 
 class AIService {
   Interpreter? _interpreter;
-  static const String modelFile = "assets/TanamCareModelAI.tflite";
+  static const String modelFile = "assets/tomato_model_int8.tflite";
   static const int inputSize = 224;
 
   Future<void> loadModel() async {
@@ -48,9 +48,9 @@ class AIService {
       for (var y = 0; y < inputSize; y++) {
         for (var x = 0; x < inputSize; x++) {
           final pixel = resizedImage.getPixel(x, y);
-          input[0][y][x][0] = pixel.r / 255.0;
-          input[0][y][x][1] = pixel.g / 255.0;
-          input[0][y][x][2] = pixel.b / 255.0;
+          input[0][y][x][0] = pixel.r.toDouble();
+          input[0][y][x][1] = pixel.g.toDouble();
+          input[0][y][x][2] = pixel.b.toDouble();
         }
       }
 

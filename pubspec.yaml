@@ -27,7 +27,7 @@ dependencies:
 
   # PERBAIKAN DI SINI:
   # Update ke 0.11.0 agar support model TensorFlow terbaru
-  tflite_flutter: ^0.11.0
+  tflite_flutter: 0.12.1
 
   image_picker: ^1.0.7
   image: ^4.1.7
@@ -46,5 +46,5 @@ flutter:
     - assets/
     # Baris di bawah ini sebenarnya opsional jika 'assets/' sudah di-include,
     # tapi dibiarkan agar lebih spesifik (aman).
-    - assets/TanamCareModelAI.tflite
+    - assets/tomato_model_int8.tflite
     - assets/labels.txt

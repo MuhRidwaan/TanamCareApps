@@ -1,10 +1,9 @@
-Bacterial Spot
-Early Blight
-Late Blight
-Leaf Mold
-Septoria Leaf Spot
-Spider Mites
-Target Spot
-Yellow Leaf Curl Virus
-Mosaic Virus
-Healthy
+bacterial_spot
+early_blight
+healthy
+late_blight
+leaf_mold
+septoria_leaf_spot
+spotted_spider_mite
+target_spot
+yellow_leaf_curl_virus
