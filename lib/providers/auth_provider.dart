@@ -9,94 +9,91 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   String? _errorMessage;
-  String? get errorMessage => _errorMessage; // Getter error
+  String? get errorMessage => _errorMessage;
 
   UserModel? _user;
   UserModel? get user => _user;
 
-  // --- REGISTER (DIPERBAIKI) ---
-  Future<bool> register(String name, String email, String password) async {
-    _isLoading = false;
-    _errorMessage = null; // Reset error lama
+  void loadUser() {
     notifyListeners();
-
-    try {
-      // Panggil service
-      final success = await _authService.register(name, email, password);
-
-      _isLoading = false;
-      notifyListeners();
-      return success;
-    } catch (e) {
-      _isLoading = false;
-      // Bersihkan teks "Exception: " agar lebih rapi di layar
-      _errorMessage = e.toString().replaceAll("Exception: ", "");
-      notifyListeners();
-      return false;
-    }
   }
 
-  // --- LOGIN ---
+  // =====================
+  // REGISTER
+  Future<bool> register(String name, String email, String password) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    final success = await _authService.register(name, email, password);
+
+    if (success) {
+      _user = UserModel(
+        id: DateTime.now().millisecondsSinceEpoch,
+        name: name,
+        email: email,
+      );
+    }
+
+    _isLoading = false;
+    notifyListeners();
+    return success;
+  }
+
+  // =====================
+  // LOGIN
   Future<bool> login(String email, String password) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
-    try {
-      final success = await _authService.login(email, password);
-      if (success) {
-        _user = await _authService.getUserProfile();
-      }
-      _isLoading = false;
-      notifyListeners();
-      return success;
-    } catch (e) {
-      _isLoading = false;
-      _errorMessage = "Login Gagal";
-      notifyListeners();
-      return false;
+    final success = await _authService.login(email, password);
+
+    if (success) {
+      _user = UserModel(
+        id: 1,
+        name: "User",
+        email: email,
+      );
     }
+
+    _isLoading = false;
+    notifyListeners();
+    return success;
   }
 
-  // --- UPDATE PROFILE FUNCTION ---
-  Future<bool> updateProfile(String name, String email, String? password) async {
+  // =====================
+  // UPDATE PROFILE (COCOK DENGAN EditProfileScreen)
+  Future<bool> updateProfile(
+    String name,
+    String email,
+    String? password,
+  ) async {
+    if (_user == null) return false;
+
     _isLoading = true;
-    _errorMessage = null;
     notifyListeners();
 
     try {
-      // Panggil update service
-      await _authService.updateProfile(
+      // password belum dipakai (opsional, future)
+      _user = _user!.copyWith(
         name: name,
         email: email,
-        password: password,
       );
-
-      // JIKA SUKSES KE SERVER, LANGSUNG PANGGIL loadUser() UNTUK SINKRONISASI
-      await loadUser(); // loadUser ini akan me-re-fetch data dari GET /user
-      
-      _isLoading = false;
-      notifyListeners();
       return true;
-
     } catch (e) {
-      _isLoading = false;
-      _errorMessage = e.toString().replaceAll("Exception: ", "");
-      notifyListeners();
+      _errorMessage = e.toString();
       return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-}
-
-  // --- LOGOUT ---
-  Future<void> logout() async {
-    await _authService.logout();
-    _user = null;
-    notifyListeners();
   }
 
-  // --- LOAD USER (CEK TOKEN) ---
-  Future<void> loadUser() async {
-    _user = await _authService.getUserProfile();
+  // =====================
+  // LOGOUT
+  Future<void> logout() async {
+    _user = null;
     notifyListeners();
   }
 }

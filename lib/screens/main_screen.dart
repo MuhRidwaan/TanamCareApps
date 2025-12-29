@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'dashboard/home_screen.dart'; // Kita akan buat ini setelah ini
-import 'scan/scan_screen.dart'; 
-// import 'history/history_screen.dart'; // Placeholder
+import 'dashboard/home_screen.dart';
+import 'history/history_screen.dart'; // Pastikan file ini ada
 import 'profile/profile_screen.dart';
+import 'scan/scan_screen.dart'; // Import file AI Scan yang asli
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -14,26 +14,33 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  // Daftar halaman untuk setiap tab
-  final List<Widget> _pages = [
-    const HomeScreen(),
-     const ScanScreen(),
-    const Center(child: Text("Halaman History")), // Placeholder
-    const ProfileScreen(),
-  ];
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    // Inisialisasi daftar halaman
+    _pages = const [
+      HomeScreen(),
+      ScanScreen(), // ✅ PERBAIKAN: Pakai ScanScreen asli (Fitur AI), BUKAN Placeholder
+      HistoryScreen(), // Fitur History
+      ProfileScreen(), // Fitur Profile
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_currentIndex],
+      // IndexedStack menjaga agar halaman tidak refresh saat pindah tab (Performa lebih baik)
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _pages,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        type: BottomNavigationBarType.fixed, // Agar semua label muncul
+        onTap: (index) => setState(() => _currentIndex = index),
+        type:
+            BottomNavigationBarType.fixed, // Agar 4 icon muat dan label muncul
         selectedItemColor: Colors.black,
         unselectedItemColor: Colors.grey,
         showUnselectedLabels: true,

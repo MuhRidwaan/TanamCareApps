@@ -108,9 +108,8 @@ class _ScanScreenState extends State<ScanScreen> {
 
   // --- BAGIAN INI YANG DI-UPGRADE TOTAL BIAR MANTAP ---
   void _showResultDialog(Map<String, dynamic> result) {
-    // String rawLabel = result['label'];
     String rawLabel = result['label'].toString().trim();
-    print("Mencari data untuk: '$rawLabel'");
+
     // Ambil data dari DiseaseData, kalau gak ada pakai data default
     var info = DiseaseData.list[rawLabel] ??
         {
