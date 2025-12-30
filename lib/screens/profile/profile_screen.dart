@@ -3,6 +3,11 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../auth/login_screen.dart';
 import 'edit_profile_screen.dart'; // WAJIB: Pastikan import ini ada
+import 'notifications_screen.dart';
+import 'language_screen.dart';
+import 'about_screen.dart';
+import 'help_screen.dart';
+import 'plant_progress_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -35,7 +40,13 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const NotificationsScreen()),
+                      );
+                    },
                     icon: const Icon(Icons.notifications_none, size: 28),
                   ),
                 ],
@@ -45,7 +56,8 @@ class ProfileScreen extends StatelessWidget {
               // --- USER INFO SECTION (KODE INI DIPERBAIKI) ---
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center, // Tambahkan ini agar vertikal center
+                crossAxisAlignment: CrossAxisAlignment
+                    .center, // Tambahkan ini agar vertikal center
                 children: [
                   // Gunakan Expanded agar Column mengambil sisa ruang yang tersedia
                   Expanded(
@@ -75,7 +87,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   // Icon Edit (Navigasi ke EditProfileScreen)
                   // Kita bungkus dengan SizedBox agar punya dimensi pasti
-                  SizedBox( 
+                  SizedBox(
                     width: 48, // Lebar yang cukup untuk tombol
                     height: 48, // Tinggi yang cukup untuk tombol
                     child: IconButton(
@@ -87,7 +99,8 @@ class ProfileScreen extends StatelessWidget {
                               builder: (context) => const EditProfileScreen()),
                         );
                       },
-                      icon: const Icon(Icons.edit_outlined, color: Colors.black54),
+                      icon: const Icon(Icons.edit_outlined,
+                          color: Colors.black54),
                     ),
                   )
                 ],
@@ -98,35 +111,64 @@ class ProfileScreen extends StatelessWidget {
               _buildMenuItem(
                 icon: Icons.assignment_outlined,
                 text: "Progress Tanaman",
-                onTap: () {},
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const PlantProgressScreen()),
+                  );
+                },
               ),
               _buildDivider(),
 
               _buildMenuItem(
                 icon: Icons.language,
                 text: "Bahasa",
-                onTap: () {},
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const LanguageScreen()),
+                  );
+                },
               ),
               _buildDivider(),
 
               _buildMenuItem(
                 icon: Icons.headset_mic_outlined,
                 text: "Bantuan",
-                onTap: () {},
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const HelpScreen()),
+                  );
+                },
               ),
               _buildDivider(),
 
               _buildMenuItem(
                 icon: Icons.notifications_none_outlined,
                 text: "Notifikasi",
-                onTap: () {},
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const NotificationsScreen()),
+                  );
+                },
               ),
               _buildDivider(),
 
               _buildMenuItem(
                 icon: Icons.info_outline,
                 text: "Tentang",
-                onTap: () {},
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const AboutScreen()),
+                  );
+                },
               ),
               _buildDivider(),
 

@@ -12,6 +12,8 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _nameController = TextEditingController();
   // PERBAIKAN: Typo TextEdauth_serviceitingController -> TextEditingController
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -30,6 +32,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -68,6 +72,26 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 validator: (val) =>
                     val!.isEmpty ? "Nama tidak boleh kosong" : null,
                 decoration: _inputDecoration("Masukkan nama lengkap"),
+              ),
+              const SizedBox(height: 20),
+
+              // --- FORM NAMA DEPAN ---
+              _buildLabel("Nama Depan"),
+              TextFormField(
+                controller: _firstNameController,
+                validator: (val) =>
+                    val!.isEmpty ? "Nama depan tidak boleh kosong" : null,
+                decoration: _inputDecoration("Masukkan nama depan"),
+              ),
+              const SizedBox(height: 20),
+
+              // --- FORM NAMA BELAKANG ---
+              _buildLabel("Nama Belakang"),
+              TextFormField(
+                controller: _lastNameController,
+                validator: (val) =>
+                    val!.isEmpty ? "Nama belakang tidak boleh kosong" : null,
+                decoration: _inputDecoration("Masukkan nama belakang"),
               ),
               const SizedBox(height: 20),
 
