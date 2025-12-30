@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:image_picker/image_picker.dart';
@@ -85,6 +86,14 @@ class _ScanScreenState extends State<ScanScreen> {
     if (_selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Pilih gambar terlebih dahulu!")),
+      );
+      return;
+    }
+
+    // On Web, AI inferencing is not supported (dart:ffi native libraries aren't available).
+    if (kIsWeb) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Fitur AI tidak tersedia di Web. Coba di perangkat Android atau iOS.')),
       );
       return;
     }
