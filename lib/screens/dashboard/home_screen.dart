@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/garden_provider.dart';
 import '../../services/weather_service.dart';
+import '../../models/plant_species_model.dart';
+import 'plant_detail_screen.dart';
+import 'my_garden_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,108 +17,230 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final WeatherService _weatherService = WeatherService();
   late Future<Map<String, dynamic>> _weatherFuture;
+  late TextEditingController _searchController;
 
   @override
   void initState() {
     super.initState();
-    // Panggil cuaca saat halaman dibuka
-    // Nanti bisa diganti lat/long dari profil user jika ada
+    _searchController = TextEditingController();
     _weatherFuture = _weatherService.getCurrentWeather();
 
-    // Opsional: Pastikan data user ter-load jika belum ada
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       if (auth.user == null) {
         auth.loadUser();
       }
+
+      final garden = Provider.of<GardenProvider>(context, listen: false);
+      garden.loadAllSpecies();
+      garden.loadUserPlants();
     });
   }
 
   @override
-  Widget build(BuildContext context) {
-    // Ambil data user dari Provider
-    final user = Provider.of<AuthProvider>(context).user;
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
+  @override
+  Widget build(BuildContext context) {
+    final user = Provider.of<AuthProvider>(context).user;
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
+          physics: const BouncingScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- 1. HEADER DINAMIS ---
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Tampilkan Nama User atau 'Petani' jika loading/null
-                      Text(
-                        "Haii, ${user?.name ?? 'Petani'}!",
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        "Siap Menanam Hari Ini",
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey,
-                        ),
-                      ),
+              // --- HEADER ---
+              Container(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFF2ECC71).withOpacity(0.15),
+                      const Color(0xFF27AE60).withOpacity(0.05),
                     ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-
-                  // --- CUACA REAL-TIME ---
-                  FutureBuilder<Map<String, dynamic>>(
-                    future: _weatherFuture,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2));
-                      }
-
-                      if (snapshot.hasError || !snapshot.hasData) {
-                        return const Icon(Icons.error_outline,
-                            color: Colors.grey);
-                      }
-
-                      final temp = snapshot.data?['temperature'] ?? 0;
-                      // Kode cuaca OpenMeteo: 0=Cerah, 1-3=Berawan, >50=Hujan
-                      // Kita sederhanakan icon-nya
-                      return Row(
-                        children: [
-                          const Icon(Icons.wb_sunny_outlined,
-                              color: Colors.orange),
-                          const SizedBox(width: 6),
-                          Text(
-                            "$temp °C",
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Hai, ${user?.name ?? 'Bona'}! 👋",
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1B5E20),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          "Siap Menanam Hari Ini",
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF558B2F),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.orange.withOpacity(0.1),
+                            blurRadius: 6,
                           ),
                         ],
-                      );
-                    },
-                  )
-                ],
+                      ),
+                      child: FutureBuilder<Map<String, dynamic>>(
+                        future: _weatherFuture,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const SizedBox(
+                              width: 50,
+                              height: 32,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            );
+                          }
+
+                          if (snapshot.hasError || !snapshot.hasData) {
+                            return const Icon(Icons.error_outline,
+                                color: Colors.grey, size: 20);
+                          }
+
+                          final temp = snapshot.data?['temperature'] ?? 0;
+                          return Row(
+                            children: [
+                              const Icon(Icons.wb_sunny,
+                                  color: Colors.orange, size: 20),
+                              const SizedBox(width: 6),
+                              Text(
+                                "$temp°C",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: Color(0xFF1B5E20),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    )
+                  ],
+                ),
               ),
               const SizedBox(height: 20),
 
-              // --- SISA KODE LAINNYA TETAP SAMA ---
-              // (Search Bar, Banner, Grid Populer jangan dihapus)
+              // --- SEARCH BAR ---
               _buildSearchBar(),
               const SizedBox(height: 20),
+
+              // --- RECOMMENDATION BANNER ---
               _buildRecommendationBanner(),
-              const SizedBox(height: 25),
-              const Text("Populer",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 15),
+              const SizedBox(height: 24),
+
+              // --- POPULER SECTION HEADER ---
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Tanaman Populer",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1B5E20),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Container(
+                          height: 3,
+                          width: 35,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2ECC71),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Consumer<GardenProvider>(
+                      builder: (context, gardenProvider, _) {
+                        final plantCount = gardenProvider.userPlants.length;
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const MyGardenScreen(),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2ECC71)
+                                  .withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: const Color(0xFF2ECC71),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.local_florist,
+                                  size: 14,
+                                  color: Color(0xFF2ECC71),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  "Kebun ($plantCount)",
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF2ECC71),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
               _buildPopularGrid(),
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -122,146 +248,427 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- Widget Helper (Salin ulang bagian bawah kode sebelumnya kesini) ---
-  // Agar kode terlihat rapi, saya buat method terpisah
   Widget _buildSearchBar() {
-    return TextField(
-      decoration: InputDecoration(
-        hintText: "Cari Tanaman..",
-        hintStyle: const TextStyle(color: Colors.grey),
-        filled: true,
-        fillColor: Colors.white,
-        suffixIcon: const Icon(Icons.search, color: Colors.black),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide.none,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF2ECC71).withOpacity(0.1),
+              blurRadius: 10,
+              spreadRadius: 0,
+            ),
+          ],
+        ),
+        child: TextField(
+          controller: _searchController,
+          decoration: InputDecoration(
+            hintText: "Cari tanaman...",
+            hintStyle: const TextStyle(
+              color: Colors.grey,
+              fontSize: 13,
+            ),
+            filled: true,
+            fillColor: Colors.white,
+            prefixIcon: const Padding(
+              padding: EdgeInsets.only(left: 16, right: 12),
+              child: Icon(Icons.search, color: Color(0xFF2ECC71), size: 22),
+            ),
+            suffixIcon: const Padding(
+              padding: EdgeInsets.only(right: 16),
+              child: Icon(Icons.tune, color: Colors.grey, size: 18),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 14,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(
+                color: Color(0xFF2ECC71),
+                width: 2,
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
 
   Widget _buildRecommendationBanner() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF43A047),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.green.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          )
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFF2ECC71),
+              const Color(0xFF27AE60),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF2ECC71).withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            )
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
+                const Icon(Icons.lightbulb,
+                    color: Colors.white70, size: 22),
+                const SizedBox(width: 10),
                 const Text(
                   "Rekomendasi Hari Ini",
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: 15,
                   ),
-                ),
-                const SizedBox(height: 15),
-                Row(
-                  children: const [
-                    Icon(Icons.schedule, color: Colors.white70, size: 20),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text("Waktu Siram Tanaman:\n06.00 - 09.00",
-                          style: TextStyle(color: Colors.white, fontSize: 12)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: const [
-                    Icon(Icons.eco, color: Colors.white70, size: 20),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text("Pemupukan\nSekali Seminggu",
-                          style: TextStyle(color: Colors.white, fontSize: 12)),
-                    ),
-                  ],
                 ),
               ],
             ),
-          ),
-          const Expanded(
-            flex: 1,
-            child: Icon(Icons.local_florist_rounded,
-                size: 80, color: Colors.white30),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.15),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.water_drop,
+                            color: Colors.white70, size: 18),
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Penyiraman",
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 10,
+                                )),
+                            Text("06.00 - 09.00",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                )),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  const Divider(color: Colors.white24, height: 1),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.eco,
+                            color: Colors.white70, size: 18),
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Pemupukan",
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 10,
+                                )),
+                            Text("Sekali Seminggu",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                )),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildPopularGrid() {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      childAspectRatio: 0.85,
-      crossAxisSpacing: 15,
-      mainAxisSpacing: 15,
-      children: [
-        _buildPlantCard("Tomat", Icons.circle, Colors.red),
-        _buildPlantCard("Wortel", Icons.change_history, Colors.orange),
-        _buildPlantCard("Timun", Icons.rounded_corner, Colors.green),
-        _buildPlantCard("Kentang", Icons.landscape, Colors.brown),
-      ],
+    return Consumer<GardenProvider>(
+      builder: (context, gardenProvider, _) {
+        if (gardenProvider.isLoading && gardenProvider.allSpecies.isEmpty) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(20.0),
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        if (gardenProvider.allSpecies.isEmpty) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(20.0),
+              child: Text("Tidak ada tanaman tersedia"),
+            ),
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 0.82,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 16,
+            ),
+            itemCount: gardenProvider.allSpecies.length,
+            itemBuilder: (context, index) {
+              final plant = gardenProvider.allSpecies[index];
+              return _buildPlantCard(context, plant);
+            },
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildPlantCard(String name, IconData icon, Color color) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
+  Widget _buildPlantCard(BuildContext context, PlantSpeciesModel plant) {
+    // Map plant names to icons or images
+    final plantData = _getPlantIconData(plant.name.toLowerCase());
+    final plantColor = plantData['color'] as Color;
+    final isImage = plantData['isImage'] as bool? ?? false;
+    final imagePath = plantData['image'] as String?;
+    final plantIcon = plantData['icon'] as IconData?;
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PlantDetailScreen(plant: plant),
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
               color: Colors.grey.withOpacity(0.1),
-              blurRadius: 5,
-              spreadRadius: 2),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 50, color: color),
-          const SizedBox(height: 10),
-          Text(name,
-              style:
-                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(height: 10),
-          SizedBox(
-            height: 32,
-            width: 100,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2ECC71),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)),
-                padding: EdgeInsets.zero,
-              ),
-              onPressed: () {},
-              child: const Text("Tanam", style: TextStyle(fontSize: 12)),
+              blurRadius: 10,
+              spreadRadius: 0,
+              offset: const Offset(0, 3),
             ),
-          )
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image Container dengan icon atau image file
+            ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(14),
+                topRight: Radius.circular(14),
+              ),
+              child: Container(
+                height: 110,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      plantColor.withOpacity(0.2),
+                      plantColor.withOpacity(0.05),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Center(
+                  child: isImage && imagePath != null
+                      ? Image.asset(
+                          imagePath,
+                          width: 70,
+                          height: 70,
+                          fit: BoxFit.contain,
+                        )
+                      : Icon(
+                          plantIcon ?? Icons.local_florist,
+                          size: 60,
+                          color: plantColor,
+                        ),
+                ),
+              ),
+            ),
+            // Info section
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    plant.name,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1B5E20),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  // Tanam button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 32,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2ECC71),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: EdgeInsets.zero,
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                PlantDetailScreen(plant: plant),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        'Tanam',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Map<String, dynamic> _getPlantIconData(String plantName) {
+    final iconMap = {
+      'tomat cherry': {'icon': Icons.favorite, 'color': const Color(0xFFE74C3C), 'image': 'assets/cherry-tomato.png', 'isImage': true},
+      'cherry tomato': {'icon': Icons.favorite, 'color': const Color(0xFFE74C3C), 'image': 'assets/cherry-tomato.png', 'isImage': true},
+      'cabe rawit': {'icon': Icons.local_fire_department, 'color': const Color(0xFFE74C3C), 'image': 'assets/cabai.png', 'isImage': true},
+      'rawit chili': {'icon': Icons.local_fire_department, 'color': const Color(0xFFE74C3C), 'image': 'assets/cabai.png', 'isImage': true},
+      'cabai': {'icon': Icons.local_fire_department, 'color': const Color(0xFFE74C3C), 'image': 'assets/cabai.png', 'isImage': true},
+      'cabai rawit': {'icon': Icons.local_fire_department, 'color': const Color(0xFFE74C3C), 'image': 'assets/cabai.png', 'isImage': true},
+      'chili': {'icon': Icons.local_fire_department, 'color': const Color(0xFFE74C3C), 'image': 'assets/cabai.png', 'isImage': true},
+      'pepper': {'icon': Icons.local_fire_department, 'color': const Color(0xFFE74C3C), 'image': 'assets/cabai.png', 'isImage': true},
+      'jagung manis': {'icon': Icons.auto_awesome, 'color': const Color(0xFFF1C40F), 'image': 'assets/corn.png', 'isImage': true},
+      'sweet corn': {'icon': Icons.auto_awesome, 'color': const Color(0xFFF1C40F), 'image': 'assets/corn.png', 'isImage': true},
+      'jagung': {'icon': Icons.auto_awesome, 'color': const Color(0xFFF1C40F), 'image': 'assets/corn.png', 'isImage': true},
+      'corn': {'icon': Icons.auto_awesome, 'color': const Color(0xFFF1C40F), 'image': 'assets/corn.png', 'isImage': true},
+    };
+    return iconMap[plantName] ?? {'icon': Icons.local_florist, 'color': const Color(0xFF2ECC71)};
+  }
+}
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 50,
+      height: 70,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 35,
+            height: 55,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE74C3C),
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFE74C3C).withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            left: 5,
+            top: 10,
+            child: Container(
+              width: 10,
+              height: 12,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.25),
+                borderRadius: BorderRadius.circular(5),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 0,
+            child: Container(
+              width: 8,
+              height: 15,
+              decoration: BoxDecoration(
+                color: const Color(0xFF27AE60),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
-}
