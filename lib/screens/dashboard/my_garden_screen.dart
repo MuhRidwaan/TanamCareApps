@@ -13,6 +13,25 @@ class MyGardenScreen extends StatefulWidget {
 }
 
 class _MyGardenScreenState extends State<MyGardenScreen> {
+  String? _getCustomImageAsset(String plantName) {
+    final name = plantName.toLowerCase();
+    const iconMap = {
+      'tomat cherry': 'assets/cherry-tomato.png',
+      'cherry tomato': 'assets/cherry-tomato.png',
+      'cabe rawit': 'assets/cabai.png',
+      'rawit chili': 'assets/cabai.png',
+      'cabai': 'assets/cabai.png',
+      'cabai rawit': 'assets/cabai.png',
+      'chili': 'assets/cabai.png',
+      'pepper': 'assets/cabai.png',
+      'jagung manis': 'assets/corn.png',
+      'sweet corn': 'assets/corn.png',
+      'jagung': 'assets/corn.png',
+      'corn': 'assets/corn.png',
+    };
+    return iconMap[name];
+  }
+
   @override
   void initState() {
     super.initState();

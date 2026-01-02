@@ -1,14 +1,6 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
-/// Theme aplikasi TanamCare
-///
-/// Penggunaan di main.dart:
-/// ```dart
-/// MaterialApp(
-///   theme: AppTheme.lightTheme,
-/// )
-/// ```
 class AppTheme {
   AppTheme._();
 
@@ -49,9 +41,6 @@ class AppTheme {
       cardTheme: CardTheme(
         elevation: 2,
         color: AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
       ),
 
       // Elevated Button
@@ -167,13 +156,11 @@ class AppTheme {
         ),
         behavior: SnackBarBehavior.floating,
       ),
-
-      // Dialog
       dialogTheme: DialogTheme(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.all(Radius.circular(16)),
         ),
-        titleTextStyle: const TextStyle(
+        titleTextStyle: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,
           color: AppColors.textPrimary,
