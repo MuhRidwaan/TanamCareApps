@@ -13,160 +13,138 @@ class LandingScreen extends StatefulWidget {
 
 class _LandingScreenState extends State<LandingScreen>
     with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
     super.initState();
+    _initAnimations();
+    _startSequence();
+  }
 
-    // Setup animations
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+  void _initAnimations() {
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
-
+    
+    _scaleAnimation = Tween<double>(begin: 0.6, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
+    );
+    
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
+      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
     );
+  }
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-    );
+  Future<void> _startSequence() async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (mounted) _controller.forward();
+    
+    await _initAndNavigate();
+  }
 
-    _animationController.forward();
-
-    // Navigate after 3 seconds
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        _navigateToNextScreen();
-      }
-    });
+  Future<void> _initAndNavigate() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    await authProvider.loadUser();
+    
+    await Future.delayed(const Duration(seconds: 3));
+    
+    if (mounted) {
+      _navigateToNextScreen();
+    }
   }
 
   void _navigateToNextScreen() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
-    // Cek apakah user sudah login
-    if (authProvider.user != null) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const MainScreen()),
-      );
+    
+    Widget nextScreen;
+    if (authProvider.isLoggedIn && authProvider.user != null) {
+      nextScreen = const MainScreen();
     } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
+      nextScreen = const LoginScreen();
     }
-  }
 
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  Widget _buildLogoImage() {
-    try {
-      return Image.asset(
-        'app_logo.png',
-        width: 200,
-        height: 200,
-        errorBuilder: (context, error, stackTrace) {
-          return _getFallbackLogo();
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => nextScreen,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
         },
-      );
-    } catch (e) {
-      return _getFallbackLogo();
-    }
-  }
-
-  Widget _getFallbackLogo() {
-    return Container(
-      width: 240,
-      height: 240,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF2ECC71),
-            const Color(0xFF27AE60),
-          ],
-        ),
-      ),
-      child: const Center(
-        child: Icon(
-          Icons.eco,
-          size: 80,
-          color: Colors.white,
-        ),
+        transitionDuration: const Duration(milliseconds: 400),
       ),
     );
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Center(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: SlideTransition(
-            position: _slideAnimation,
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: _scaleAnimation.value,
+              child: Opacity(
+                opacity: _fadeAnimation.value,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Logo dengan animasi scale
-                    ScaleTransition(
-                      scale: Tween<double>(begin: 0.5, end: 1.0).animate(
-                        CurvedAnimation(
-                          parent: _animationController,
-                          curve: Curves.elasticOut,
-                        ),
-                      ),
-                      child: Container(
-                        width: 240,
-                        height: 240,
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.transparent,
-                          border: Border.all(
-                            color: const Color(0xFF2ECC71),
-                            width: 3,
+                    // Logo besar di tengah
+                    Image.asset(
+                      'assets/app_logo.png',
+                      width: size.width * 0.7,
+                      height: size.width * 0.7,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: size.width * 0.7,
+                          height: size.width * 0.7,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFF2ECC71).withOpacity(0.1),
                           ),
-                        ),
-                        child: _buildLogoImage(),
-                      ),
+                          child: const Icon(
+                            Icons.eco,
+                            size: 100,
+                            color: Color(0xFF2ECC71),
+                          ),
+                        );
+                      },
                     ),
-                    const SizedBox(height: 120),
-
-                    // Version
+                    
+                    const SizedBox(height: 60),
+                    
+                    // Version di bawah
                     Text(
                       'version 1.0.0',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey[500],
-                        fontWeight: FontWeight.w500,
+                        color: Colors.grey[400],
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );
   }
 }
+
+
