@@ -14,7 +14,31 @@ class AuthProvider extends ChangeNotifier {
   UserModel? _user;
   UserModel? get user => _user;
 
-  void loadUser() {
+  bool _isLoggedIn = false;
+  bool get isLoggedIn => _isLoggedIn;
+
+  /// Load user saat app start (check token & get user data)
+  Future<void> loadUser() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // Check apakah ada token
+      final loggedIn = await _authService.isLoggedIn();
+      _isLoggedIn = loggedIn;
+
+      if (loggedIn) {
+        // Ambil data user dari API
+        final userData = await _authService.getUser();
+        if (userData != null) {
+          _user = userData;
+        }
+      }
+    } catch (e) {
+      _errorMessage = e.toString();
+    }
+
+    _isLoading = false;
     notifyListeners();
   }
 
@@ -25,19 +49,27 @@ class AuthProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
-    final success = await _authService.register(name, email, password);
+    final result = await _authService.register(name, email, password);
 
-    if (success) {
-      _user = UserModel(
-        id: DateTime.now().millisecondsSinceEpoch,
-        name: name,
-        email: email,
-      );
+    if (result['success'] == true) {
+      // Parse user dari response
+      if (result['user'] != null) {
+        _user = UserModel.fromJson(result['user']);
+      } else {
+        _user = UserModel(
+          id: DateTime.now().millisecondsSinceEpoch,
+          name: name,
+          email: email,
+        );
+      }
+      _isLoggedIn = true;
+    } else {
+      _errorMessage = result['message'];
     }
 
     _isLoading = false;
     notifyListeners();
-    return success;
+    return result['success'] == true;
   }
 
   // =====================
@@ -47,23 +79,29 @@ class AuthProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
-    final success = await _authService.login(email, password);
+    final result = await _authService.login(email, password);
 
-    if (success) {
-      _user = UserModel(
-        id: 1,
-        name: "User",
-        email: email,
-      );
+    if (result['success'] == true) {
+      // Parse user dari response
+      if (result['user'] != null) {
+        _user = UserModel.fromJson(result['user']);
+      } else {
+        // Fallback: ambil data user dari API
+        final userData = await _authService.getUser();
+        _user = userData;
+      }
+      _isLoggedIn = true;
+    } else {
+      _errorMessage = result['message'];
     }
 
     _isLoading = false;
     notifyListeners();
-    return success;
+    return result['success'] == true;
   }
 
   // =====================
-  // UPDATE PROFILE (COCOK DENGAN EditProfileScreen)
+  // UPDATE PROFILE
   Future<bool> updateProfile(
     String name,
     String email,
@@ -72,28 +110,51 @@ class AuthProvider extends ChangeNotifier {
     if (_user == null) return false;
 
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
 
-    try {
-      // password belum dipakai (opsional, future)
-      _user = _user!.copyWith(
-        name: name,
-        email: email,
-      );
-      return true;
-    } catch (e) {
-      _errorMessage = e.toString();
-      return false;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+    final result = await _authService.updateProfile(
+      name: name,
+      email: email,
+      password: password,
+    );
+
+    if (result['success'] == true) {
+      // Update user data
+      if (result['user'] != null) {
+        _user = UserModel.fromJson(result['user']);
+      } else {
+        _user = _user!.copyWith(name: name, email: email);
+      }
+    } else {
+      _errorMessage = result['message'];
     }
+
+    _isLoading = false;
+    notifyListeners();
+    return result['success'] == true;
   }
 
   // =====================
   // LOGOUT
   Future<void> logout() async {
+    _isLoading = true;
+    notifyListeners();
+
+    await _authService.logout();
+    
     _user = null;
+    _isLoggedIn = false;
+    _errorMessage = null;
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  // =====================
+  // CLEAR ERROR
+  void clearError() {
+    _errorMessage = null;
     notifyListeners();
   }
 }

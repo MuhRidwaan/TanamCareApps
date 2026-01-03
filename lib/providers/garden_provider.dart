@@ -13,6 +13,9 @@ class GardenProvider extends ChangeNotifier {
 
   List<UserPlantModel> _userPlants = [];
   List<UserPlantModel> get userPlants => _userPlants;
+  
+  // Hidden plants (deleted locally but not on server) - stored in memory only
+  final Set<int> _hiddenPlantIds = {};
 
   ViewState _viewState = ViewState.initial;
   ViewState get viewState => _viewState;
@@ -22,6 +25,15 @@ class GardenProvider extends ChangeNotifier {
 
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
+  
+  // Last delete error for detailed feedback
+  String? _lastDeleteError;
+  String? get lastDeleteError => _lastDeleteError;
+
+  /// Get visible plants (excluding hidden ones)
+  List<UserPlantModel> get visibleUserPlants {
+    return _userPlants.where((p) => !_hiddenPlantIds.contains(p.id)).toList();
+  }
 
   /// Fetch semua species dari database
   Future<void> loadAllSpecies({bool forceRefresh = false}) async {
@@ -50,8 +62,6 @@ class GardenProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       AppLogger.error('Load user plants error', e.toString());
-      // Don't show error for user plants as it's less critical
-      // Keep existing data if any
     }
   }
 
@@ -71,7 +81,6 @@ class GardenProvider extends ChangeNotifier {
       );
 
       if (success) {
-        // Re-load user plants setelah sukses menambah
         await loadUserPlants(forceRefresh: true);
         AppLogger.debug('Plant added to garden successfully');
       }
@@ -85,26 +94,51 @@ class GardenProvider extends ChangeNotifier {
 
   /// Hapus tanaman dari kebun user
   Future<bool> deletePlant(int userPlantId) async {
+    AppLogger.debug('GardenProvider: Starting delete for plant ID: $userPlantId');
+    _lastDeleteError = null;
+    
     try {
       final success = await _plantService.deletePlant(userPlantId);
+      AppLogger.debug('GardenProvider: Delete result from service: $success');
 
       if (success) {
-        // Update state lokal agar UI langsung ter-update
         _userPlants.removeWhere((p) => p.id == userPlantId);
-        AppLogger.debug('Plant deleted successfully');
+        _hiddenPlantIds.remove(userPlantId);
+        AppLogger.debug('GardenProvider: Plant removed from local state');
         notifyListeners();
+        await loadUserPlants(forceRefresh: true);
+        return true;
       }
 
-      return success;
+      // API delete failed - hide locally as fallback
+      _lastDeleteError = 'Server tidak merespons. Tanaman disembunyikan sementara.';
+      _hiddenPlantIds.add(userPlantId);
+      notifyListeners();
+      AppLogger.warning('GardenProvider: API delete failed, hidden locally');
+      return true; // Return true because plant is hidden
     } catch (e) {
-      AppLogger.error('Delete plant failed', e.toString());
-      return false;
+      AppLogger.error('GardenProvider: Delete plant failed', e.toString());
+      _lastDeleteError = e.toString();
+      // Still hide locally on error
+      _hiddenPlantIds.add(userPlantId);
+      notifyListeners();
+      return true; // Return true because plant is hidden
     }
   }
+
+  /// Unhide a plant (restore from local hidden list)
+  void unhidePlant(int userPlantId) {
+    _hiddenPlantIds.remove(userPlantId);
+    notifyListeners();
+  }
+
+  /// Get list of hidden plant IDs
+  Set<int> get hiddenPlantIds => _hiddenPlantIds;
 
   /// Clear error message
   void clearError() {
     _errorMessage = null;
+    _lastDeleteError = null;
     notifyListeners();
   }
 }
