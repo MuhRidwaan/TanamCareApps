@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/garden_provider.dart';
+import '../../providers/language_provider.dart';
+import '../../core/constants/translations.dart';
 import '../../services/weather_service.dart';
 import '../../models/plant_species_model.dart';
 import 'plant_detail_screen.dart';
-import 'my_garden_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -46,6 +47,9 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final user = Provider.of<AuthProvider>(context).user;
+    final languageProvider = Provider.of<LanguageProvider>(context);
+    final lang = languageProvider.currentLanguage;
+    
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -74,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Hai, ${user?.name ?? 'Bona'}! 👋",
+                          "${Translations.get(Translations.greeting, lang)}, ${user?.name ?? 'Bona'}! 👋",
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
@@ -82,9 +86,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          "Siap Menanam Hari Ini",
-                          style: TextStyle(
+                        Text(
+                          Translations.get(Translations.readyToPlant, lang),
+                          style: const TextStyle(
                             fontSize: 12,
                             color: Color(0xFF558B2F),
                             fontWeight: FontWeight.w500,
@@ -151,11 +155,11 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 20),
 
               // --- SEARCH BAR ---
-              _buildSearchBar(),
+              _buildSearchBar(lang),
               const SizedBox(height: 20),
 
               // --- RECOMMENDATION BANNER ---
-              _buildRecommendationBanner(),
+              _buildRecommendationBanner(lang),
               const SizedBox(height: 24),
 
               // --- POPULER SECTION HEADER ---
@@ -167,9 +171,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          "Tanaman Populer",
-                          style: TextStyle(
+                        Text(
+                          Translations.get(Translations.popularPlants, lang),
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF1B5E20),
@@ -186,55 +190,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ],
                     ),
-                    Consumer<GardenProvider>(
-                      builder: (context, gardenProvider, _) {
-                        final plantCount = gardenProvider.userPlants.length;
-                        return GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const MyGardenScreen(),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF2ECC71)
-                                  .withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: const Color(0xFF2ECC71),
-                                width: 1,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.local_florist,
-                                  size: 14,
-                                  color: Color(0xFF2ECC71),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  "Kebun ($plantCount)",
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF2ECC71),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
                   ],
                 ),
               ),
@@ -248,7 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(String lang) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
@@ -265,7 +220,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: TextField(
           controller: _searchController,
           decoration: InputDecoration(
-            hintText: "Cari tanaman...",
+            hintText: Translations.get(Translations.searchPlant, lang),
             hintStyle: const TextStyle(
               color: Colors.grey,
               fontSize: 13,
@@ -305,7 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildRecommendationBanner() {
+  Widget _buildRecommendationBanner(String lang) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
@@ -337,9 +292,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 const Icon(Icons.lightbulb,
                     color: Colors.white70, size: 22),
                 const SizedBox(width: 10),
-                const Text(
-                  "Rekomendasi Hari Ini",
-                  style: TextStyle(
+                Text(
+                  Translations.get(Translations.todayRecommendation, lang),
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
@@ -359,72 +314,18 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               child: Column(
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(Icons.water_drop,
-                            color: Colors.white70, size: 18),
-                      ),
-                      const SizedBox(width: 10),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Penyiraman",
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 10,
-                                )),
-                            Text("06.00 - 09.00",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                )),
-                          ],
-                        ),
-                      ),
-                    ],
+                  _buildRecommendationItem(
+                    icon: Icons.water_drop,
+                    title: Translations.get(Translations.watering, lang),
+                    subtitle: "06.00 - 09.00",
                   ),
                   const SizedBox(height: 10),
                   const Divider(color: Colors.white24, height: 1),
                   const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(Icons.eco,
-                            color: Colors.white70, size: 18),
-                      ),
-                      const SizedBox(width: 10),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Pemupukan",
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 10,
-                                )),
-                            Text("Sekali Seminggu",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                )),
-                          ],
-                        ),
-                      ),
-                    ],
+                  _buildRecommendationItem(
+                    icon: Icons.eco,
+                    title: Translations.get(Translations.fertilizing, lang),
+                    subtitle: Translations.get(Translations.onceAWeek, lang),
                   ),
                 ],
               ),
@@ -435,7 +336,48 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildRecommendationItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: Colors.white70, size: 18),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 10,
+                  )),
+              Text(subtitle,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  )),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildPopularGrid() {
+    final languageProvider = Provider.of<LanguageProvider>(context);
+    final lang = languageProvider.currentLanguage;
+    
     return Consumer<GardenProvider>(
       builder: (context, gardenProvider, _) {
         if (gardenProvider.isLoading && gardenProvider.allSpecies.isEmpty) {
@@ -448,10 +390,10 @@ class _HomeScreenState extends State<HomeScreen> {
         }
 
         if (gardenProvider.allSpecies.isEmpty) {
-          return const Center(
+          return Center(
             child: Padding(
-              padding: EdgeInsets.all(20.0),
-              child: Text("Tidak ada tanaman tersedia"),
+              padding: const EdgeInsets.all(20.0),
+              child: Text(lang == 'en' ? "No plants available" : "Tidak ada tanaman tersedia"),
             ),
           );
         }
@@ -470,7 +412,7 @@ class _HomeScreenState extends State<HomeScreen> {
             itemCount: gardenProvider.allSpecies.length,
             itemBuilder: (context, index) {
               final plant = gardenProvider.allSpecies[index];
-              return _buildPlantCard(context, plant);
+              return _buildPlantCard(context, plant, lang);
             },
           ),
         );
@@ -478,7 +420,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildPlantCard(BuildContext context, PlantSpeciesModel plant) {
+  Widget _buildPlantCard(BuildContext context, PlantSpeciesModel plant, String lang) {
     // Map plant names to icons or images
     final plantData = _getPlantIconData(plant.name.toLowerCase());
     final plantColor = plantData['color'] as Color;
@@ -584,9 +526,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         );
                       },
-                      child: const Text(
-                        'Tanam',
-                        style: TextStyle(
+                      child: Text(
+                        Translations.get(Translations.plant, lang),
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,

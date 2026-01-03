@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../models/plant_species_model.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/garden_provider.dart';
 import 'plant_recommendation_screen.dart';
 
@@ -17,16 +16,16 @@ class PlantInputScreen extends StatefulWidget {
 
 class _PlantInputScreenState extends State<PlantInputScreen> {
   late TextEditingController _nicknameController;
-  String _selectedLocationType = "Pot";
+  String _selectedLocationType = "indoor";
   DateTime? _selectedDate;
   bool _isLoading = false;
+  String? _errorMessage;
 
-  final List<String> _locationTypes = [
-    "Pot",
-    "Raised Bed",
-    "Ground",
-    "Hanging Basket",
-    "Planter Box"
+  // Sesuai API: location_type (indoor/outdoor/greenhouse)
+  final List<Map<String, String>> _locationTypes = [
+    {"value": "indoor", "label": "Indoor (Dalam Ruangan)"},
+    {"value": "outdoor", "label": "Outdoor (Luar Ruangan)"},
+    {"value": "greenhouse", "label": "Greenhouse (Rumah Kaca)"},
   ];
 
   @override
@@ -83,20 +82,24 @@ class _PlantInputScreenState extends State<PlantInputScreen> {
 
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
 
     try {
-      final authProvider =
-          Provider.of<AuthProvider>(context, listen: false);
       final gardenProvider =
           Provider.of<GardenProvider>(context, listen: false);
 
+      // Format tanggal ke YYYY-MM-DD sesuai API
+      final dateForApi = _selectedDate != null 
+          ? "${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}"
+          : "${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}";
+
       // Add plant to garden
-      await gardenProvider.addPlantToGarden(
+      final success = await gardenProvider.addPlantToGarden(
         speciesId: widget.plant.id,
         nickname: _nicknameController.text,
         locationType: _selectedLocationType,
-        plantingDate: _selectedDate?.toIso8601String() ?? DateTime.now().toIso8601String(),
+        plantingDate: dateForApi,
       );
 
       setState(() {
@@ -105,18 +108,27 @@ class _PlantInputScreenState extends State<PlantInputScreen> {
 
       if (!mounted) return;
 
-      // Navigate to recommendation screen
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => PlantRecommendationScreen(
-            plant: widget.plant,
-            nickname: _nicknameController.text,
-            locationType: _selectedLocationType,
-            plantingDate: _selectedDate ?? DateTime.now(),
+      if (success) {
+        // Navigate to recommendation screen
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PlantRecommendationScreen(
+              plant: widget.plant,
+              nickname: _nicknameController.text,
+              locationType: _selectedLocationType,
+              plantingDate: _selectedDate ?? DateTime.now(),
+            ),
           ),
-        ),
-      );
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Gagal menyimpan tanaman. Coba lagi."),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -124,10 +136,16 @@ class _PlantInputScreenState extends State<PlantInputScreen> {
 
       if (!mounted) return;
 
+      String errorMsg = e.toString();
+      if (errorMsg.contains('Exception:')) {
+        errorMsg = errorMsg.replaceAll('Exception:', '').trim();
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Error: ${e.toString()}"),
+          content: Text(errorMsg),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
         ),
       );
     }
@@ -221,11 +239,11 @@ class _PlantInputScreenState extends State<PlantInputScreen> {
                   isExpanded: true,
                   underline: const SizedBox(),
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  items: _locationTypes.map((String value) {
+                  items: _locationTypes.map((Map<String, String> item) {
                     return DropdownMenuItem<String>(
-                      value: value,
+                      value: item['value'],
                       child: Text(
-                        value,
+                        item['label']!,
                         style: const TextStyle(fontSize: 14),
                       ),
                     );

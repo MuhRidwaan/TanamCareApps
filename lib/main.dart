@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/garden_provider.dart';
 import 'providers/language_provider.dart';
-import 'screens/auth/login_screen.dart';
+import 'providers/history_provider.dart';
+import 'providers/scan_provider.dart';
+import 'screens/landing_screen.dart';
 import 'core/theme/app_theme.dart';
 
 
@@ -19,16 +21,18 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         // Daftarkan AuthProvider di sini
-        ChangeNotifierProvider(create: (_) => AuthProvider()), // [cite: 153]
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => GardenProvider()),
         ChangeNotifierProvider(create: (_) => LanguageProvider()..loadLanguage()),
+        ChangeNotifierProvider(create: (_) => HistoryProvider()),
+        ChangeNotifierProvider(create: (_) => ScanProvider()),
       ],
       child: MaterialApp(
         title: 'TanamCare',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,  // Gunakan theme terpusat
-        // Arahkan langsung ke LoginScreen
-        home: const LoginScreen(),
+        // Tampilkan Landing Screen terlebih dahulu
+        home: const LandingScreen(),
       ),
     );
   }

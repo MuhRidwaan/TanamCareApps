@@ -13,25 +13,6 @@ class MyGardenScreen extends StatefulWidget {
 }
 
 class _MyGardenScreenState extends State<MyGardenScreen> {
-  String? _getCustomImageAsset(String plantName) {
-    final name = plantName.toLowerCase();
-    const iconMap = {
-      'tomat cherry': 'assets/cherry-tomato.png',
-      'cherry tomato': 'assets/cherry-tomato.png',
-      'cabe rawit': 'assets/cabai.png',
-      'rawit chili': 'assets/cabai.png',
-      'cabai': 'assets/cabai.png',
-      'cabai rawit': 'assets/cabai.png',
-      'chili': 'assets/cabai.png',
-      'pepper': 'assets/cabai.png',
-      'jagung manis': 'assets/corn.png',
-      'sweet corn': 'assets/corn.png',
-      'jagung': 'assets/corn.png',
-      'corn': 'assets/corn.png',
-    };
-    return iconMap[name];
-  }
-
   @override
   void initState() {
     super.initState();
@@ -79,7 +60,7 @@ class _MyGardenScreenState extends State<MyGardenScreen> {
       body: Consumer<GardenProvider>(
         builder: (context, gardenProvider, _) {
           // Loading state
-          if (gardenProvider.isLoading && gardenProvider.userPlants.isEmpty) {
+          if (gardenProvider.isLoading && gardenProvider.visibleUserPlants.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -101,7 +82,7 @@ class _MyGardenScreenState extends State<MyGardenScreen> {
           }
 
           // Empty state
-          if (gardenProvider.userPlants.isEmpty) {
+          if (gardenProvider.visibleUserPlants.isEmpty) {
             return Center(
               child: SingleChildScrollView(
                 child: Column(
@@ -182,13 +163,13 @@ class _MyGardenScreenState extends State<MyGardenScreen> {
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
-                        final plant = gardenProvider.userPlants[index];
+                        final plant = gardenProvider.visibleUserPlants[index];
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 16),
                           child: _buildPlantProgressCard(plant),
                         );
                       },
-                      childCount: gardenProvider.userPlants.length,
+                      childCount: gardenProvider.visibleUserPlants.length,
                     ),
                   ),
                 ),
@@ -209,11 +190,11 @@ class _MyGardenScreenState extends State<MyGardenScreen> {
     final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
     final lang = languageProvider.currentLanguage;
     
-    final totalPlants = gardenProvider.userPlants.length;
-    final healthyPlants = gardenProvider.userPlants
+    final totalPlants = gardenProvider.visibleUserPlants.length;
+    final healthyPlants = gardenProvider.visibleUserPlants
         .where((p) => p.status.toLowerCase() == 'healthy')
         .length;
-    final seedlingPlants = gardenProvider.userPlants
+    final seedlingPlants = gardenProvider.visibleUserPlants
         .where((p) => p.growthStage.toLowerCase().contains('seedling'))
         .length;
 
@@ -740,13 +721,12 @@ class _MyGardenScreenState extends State<MyGardenScreen> {
                 // Remove loading snackbar
                 ScaffoldMessenger.of(context).clearSnackBars();
                 
-                // Show result snackbar
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
                       success
-                          ? '"${plant.nickname}" ${Translations.get(Translations.plantDeleted, lang)}'
-                          : Translations.get(Translations.deleteFailed, lang),
+                        ? '"${plant.nickname}" ${Translations.get(Translations.plantDeleted, lang)}'
+                        : Translations.get(Translations.deleteFailed, lang),
                     ),
                     backgroundColor: success ? const Color(0xFF2ECC71) : Colors.red,
                     duration: Duration(seconds: 3),
